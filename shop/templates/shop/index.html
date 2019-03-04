@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    {% load static %}
+    {% for category in categories %}
+        <p><img src="{{category.photo.url}}"><a href="{% url 'category' %}?id={{category.id}}" >{{ category.name }}</a></p>
+    {% endfor %}
+    {% for product in products %}
+        <p><a href="{% url 'category' %}?code={{product.code}}" >{{ product.name }}</a></p>
+    {% endfor %}
+</body>
+</html>
