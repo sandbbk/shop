@@ -3,9 +3,8 @@ from django.db import transaction
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
-from django.db.models import Sum
-from django.db.models import F
-import json
+from django.db.models import Sum, F, ExpressionWrapper
+
 
 class Category(models.Model):
     name = models.CharField(max_length=64, unique=True)
@@ -52,7 +51,7 @@ class Customer(models.Model):
         return self.full_name
 
     def get_cart(self):
-        return Cart_items.objects.filter(customer=self)
+        return Cart_items.objects.filter(customer=self).select_related('product')
 
     @transaction.atomic
     def add_to_cart(self, product_code, quantity):
@@ -92,12 +91,15 @@ class Customer(models.Model):
         order_items = []
         if cart:
             with transaction.atomic():
-                order = Order.objects.create(Customer=self, total_cost=cart.aggregate(Sum(F('price') - F('price')*F('discount')/100)))
-                objs = list(cart.select_related('product'))
-                for obj in objs:
-                    order_items.append(Order_items(order=order, code=obj.code, name=obj.name, price=obj.price,
-                                                   discount=obj.discount))
+                order = Order.objects.create(customer=self)
+                for obj in cart:
+                    order_items.append(Order_items(order=order, code=obj.product.code, name=obj.product.name, price=obj.product.price,
+                                                   discount=obj.product.discount))
                 Order_items.objects.bulk_create(order_items)
+                cart_wt = Order_items.objects.filter(order=order).aggregate(cart_total=ExpressionWrapper(
+                    Sum(F('price') - F('price') * F('discount') / 100), output_field=models.DecimalField()))
+                order.total_cost = cart_wt['cart_total']
+                order.save()
                 deleted = cart.delete()
                 result = {'result': 'success', 'reason': f'replaced {deleted[0]}'}
         return result
