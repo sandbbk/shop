@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import Product, Category, Customer, Order
+from .models import Product, Category, Customer, Order, Cart_items
 from django.http import JsonResponse
 import json
 
@@ -46,9 +46,9 @@ def add_to_cart(request):
     if isinstance(customer, Customer):
         try:
             data = request.POST
-            product_id = data.get('product_id',)
+            product_code = data.get('product_code')
             quantity = data.get('quantity')
-            result = customer.add_to_cart(product_id, quantity)
+            result = customer.add_to_cart(product_code, quantity)
         except Exception as e:
             result = {'result': 'Error', 'reason': repr(e)}
     else:
@@ -77,3 +77,16 @@ def cart_to_order(request):
             result = {'result': 'Error', 'reason': repr(e)}
     return JsonResponse(result)
 
+def to_reserve(request):
+    customer = get_customer(request)
+    if isinstance(customer, Customer):
+        try:
+            data = request.POST
+            product_code = data.get('product_code')
+            quantity = data.get('quantity')
+            result = customer.reserve_product(product_code, quantity)
+        except Exception as e:
+            result = {'result': 'Error', 'reason': repr(e)}
+    else:
+        result = customer
+    return JsonResponse(result)

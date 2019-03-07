@@ -8,7 +8,7 @@
     <title>Shop</title>
 </head>
 <body>
-<p>{{product.name}} <a href="{% url 'add' %}?customer_id={{customer.id}}&product_id={{product.code}}&quantity=1">Add to Cart</a> </p>
+<p>{{product.code}}{{product.name}} <a href="{% url 'add' %}?customer_id={{customer.id}}&product_id={{product.code}}&quantity=1">Add to Cart</a> </p>
  <form id="aj_form" action="" >{% csrf_token %}
      <p><label for="customer">customer id</label><input type="text" name="customer_id" id="customer"></p>
      <p><label for="product">product code</label><input type="text" name="product_id" id="product"></p>
@@ -19,7 +19,6 @@
  </form>
 
 
-<a href="{%url 'cart' %}">Go to Cart</a>
 <p>{{product.price}}</p>
 <img src="{{product.photo.url}}">
 <p>{{product.description}}</p>

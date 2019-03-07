@@ -21,7 +21,8 @@ urlpatterns = [
     path('', views.index, name='home'),
     path('category/', views.index, name='category'),
     path('product/add', views.add_to_cart, name='add'),
-    path('cart', views.get_cart, name='cart'),
+    path('cart', views.get_cart),
     path('del_from_cart', views.del_from_cart),
     path('make_order', views.cart_to_order),
+    path('product/reserve', views.to_reserve),
 ]
