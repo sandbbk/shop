@@ -11,7 +11,7 @@
 <p>{{product.code}}{{product.name}} <a href="{% url 'add' %}?customer_id={{customer.id}}&product_id={{product.code}}&quantity=1">Add to Cart</a> </p>
  <form id="aj_form" action="" >{% csrf_token %}
      <p><label for="customer">customer id</label><input type="text" name="customer_id" id="customer"></p>
-     <p><label for="product">product code</label><input type="text" name="product_id" id="product"></p>
+     <p><label for="product">product code</label><input type="text" name="product_code" id="product"></p>
      <p><label for="quantity">quantity</label><input type="text" name="quantity" id="quantity"></p>
      <p><label for="cart_item_id">cart_item_id</label><input type="text" name="cart_item_id" id="cart_item_id"></p>
      <p><label for="url">url</label><input type="text" name="url" id="url"></p>

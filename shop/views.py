@@ -84,6 +84,8 @@ def to_reserve(request):
             data = request.POST
             product_code = data.get('product_code')
             quantity = data.get('quantity')
+            if not quantity:
+                quantity = 1
             result = customer.reserve_product(product_code, quantity)
         except Exception as e:
             result = {'result': 'Error', 'reason': repr(e)}

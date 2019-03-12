@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, Customer, Order, Cart_items
+from .models import Category, Product, Customer, Order, Cart_items, Reserve
 
 
 class CategoryAdmin(admin.ModelAdmin):
@@ -21,9 +21,13 @@ class OrderAdmin(admin.ModelAdmin):
 class Cart_itemsAdmin(admin.ModelAdmin):
     list_display = [field.name for field in Cart_items._meta.fields if field.name != "id"]
 
+class ReserveAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in Reserve._meta.fields]
+
 
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Product, ProductAdmin)
 admin.site.register(Customer, CustomerAdmin)
 admin.site.register(Order, OrderAdmin)
 admin.site.register(Cart_items, Cart_itemsAdmin)
+admin.site.register(Reserve, ReserveAdmin)
