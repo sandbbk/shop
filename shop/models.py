@@ -1,15 +1,16 @@
 from django.db import models
 from django.db import transaction
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime, timedelta
 from django.db.models import Sum, F, ExpressionWrapper
+from django.contrib.auth.hashers import (check_password, is_password_usable, make_password,)
 
 
 class Category(models.Model):
     name = models.CharField(max_length=64, unique=True)
     parent = models.ForeignKey('self', null=True, max_length=64, verbose_name='Parent', blank=True,
-                               db_index=True, on_delete=models.CASCADE)
+                               db_index=True, on_delete=models.deletion.CASCADE)
     icon = models.ImageField(upload_to='', verbose_name=u'Photo', help_text='jpg/png - file')
     description = models.TextField(max_length=512, blank=True, null=True)
 
@@ -21,7 +22,7 @@ class Product(models.Model):
     code = models.AutoField(primary_key=True)
     name = models.CharField(max_length=64, db_index=True)
     category = models.ForeignKey(Category, max_length=64, verbose_name='Category', db_index=True,
-                                 on_delete=models.CASCADE)
+                                 on_delete=models.deletion.CASCADE)
     price = models.DecimalField(null=False, decimal_places=2, max_digits=7)
     discount = models.DecimalField(default=0, decimal_places=2, max_digits=7)
     qu_in_stock = models.PositiveIntegerField(default=0, db_index=True)
@@ -36,23 +37,22 @@ class Product(models.Model):
         return self.name
 
 
-class Customer(models.Model):
-    id = models.AutoField(primary_key=True)
-    full_name = models.CharField(max_length=128, db_index=True, null=False)
-    email = models.EmailField(max_length=64, unique=True, db_index=True)
+class User(AbstractUser):
+    # full_name = models.CharField(max_length=128, db_index=True, null=False)
     phone = models.CharField(max_length=13, unique=True, db_index=True)
     address = models.CharField(max_length=256, blank=True, null=True)
-    zip_code = models.IntegerField()
+    zip_code = models.IntegerField(null=True, blank=True)
     birth_day = models.DateField(default=None, null=True)
-    purse = models.DecimalField(default=0, decimal_places=2, max_digits=7)
-    pwd = models.CharField(max_length=64)
-    is_modered = models.BooleanField(choices=(('False', False), ('True', True)), default=False)
+    purse = models.DecimalField(default=0, decimal_places=2, max_digits=10)
+
+    def set_password(self, raw_password):
+        self.password = make_password(raw_password)
 
     def __str__(self):
-        return self.full_name
+        return self.username
 
     def get_cart(self):
-        return Cart_items.objects.filter(customer=self).select_related('product')
+        return Cart_items.objects.filter(user=self).select_related('product')
 
     def check_cart(self, product_code):  # returns tuple of quantity of checked product and it's item in cart or False if it DoesNotExist
         try:
@@ -62,15 +62,15 @@ class Customer(models.Model):
         except TypeError as e:
             return 0, repr(e)
         return item.quantity, item
+
     def del_old_reserves(self):
         res_timelim = datetime.now() - timedelta(hours=24)
-        print(res_timelim)
         Reserve.objects.filter(datetime_of_reserve__lt=res_timelim).delete()  # delete old reserves
 
     def check_reserved(self, product_code):
         try:
             product = Product.objects.get(code=product_code)
-            reserved = Reserve.objects.get(product=product, customer=self)
+            reserved = Reserve.objects.get(product=product, user=self)
         except ObjectDoesNotExist:
             return 0, product
         return reserved.quantity, reserved
@@ -87,7 +87,7 @@ class Customer(models.Model):
                 cart_item.quantity += quantity
                 cart_item.save()
                 return {'result': 'Success', 'reason': 'updated'}
-        Cart_items.objects.create(customer=self, product=product, quantity=quantity)
+        Cart_items.objects.create(user=self, product=product, quantity=quantity)
         result = {'result': 'Success', 'reason': 'created'}
         return result
 
@@ -107,7 +107,7 @@ class Customer(models.Model):
         self.del_old_reserves()
         if cart:
             with transaction.atomic():
-                order = Order.objects.create(customer=self)
+                order = Order.objects.create(user=self)
 
                 for obj in cart:
                     res_quantity, res_item = self.check_reserved(obj.product.code)
@@ -147,7 +147,7 @@ class Customer(models.Model):
                         f'do nothing - set client_resp=True, create reserve without touch of cart - set it to No'}}
                 elif client_resp == 'Yes':
                     self.get_cart().get(product=product).delete()
-            reserve, created = Reserve.objects.get_or_create(product=product, customer=self, quantity=quantity)
+            reserve, created = Reserve.objects.get_or_create(product=product, user=self, quantity=quantity)
             if created:
                 product.reserved += quantity
                 product.save()
@@ -158,8 +158,8 @@ class Customer(models.Model):
 
 
 class Cart_items(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.deletion.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.deletion.CASCADE)
     quantity = models.IntegerField()
 
 
@@ -167,18 +167,19 @@ class Cart_items(models.Model):
         return self.product.name
 
     class Meta:
-        unique_together = (("product", "customer"),)
-
+        unique_together = (("product", "user"),)
+        verbose_name_plural = 'Cart items'
 
 class Order(models.Model):
-    customer = models.ForeignKey(Customer, related_name='orders', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='orders', on_delete=models.deletion.CASCADE)
     total_cost = models.DecimalField(default=0, decimal_places=2, max_digits=8)
     date = models.DateTimeField(auto_now_add=True)
     paid = models.BooleanField(default=False, choices=(('True', True), ('False', False)))
     status = models.CharField(max_length=16, default='processing')
 
+
 class Order_items(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.deletion.CASCADE)
     code = models.CharField(max_length=32)
     name = models.CharField(max_length=64)
     price = models.DecimalField(null=False, decimal_places=2, max_digits=7)
@@ -186,10 +187,10 @@ class Order_items(models.Model):
 
 
 class Reserve(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.deletion.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.deletion.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
     datetime_of_reserve = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = (("product", "customer"),)
+        unique_together = (("product", "user"),)
