@@ -1,0 +1,18 @@
+Models:
+    -User
+    -Session
+Func:
+    -Reg/signup
+    -Activate
+    -lOGIN/signin
+    -Renew
+    -Logout/signout
+    -Forgotten pass
+    -Change pass
+    -ChangeEmail
+Misc:
+    - Oauth2 (FB/gmail/vk...)
+    -telegramLogin
+    -2fa (email/tg/OTP)
+    -reCaptcha
+    -Cloudflare

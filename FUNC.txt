@@ -1,0 +1,182 @@
+Functional of app shop:
+________________________________________________________________________
+
+Category:
+	-name
+	-parent category
+	-image
+	-description
+
+Product:
+	-name
+	-code
+	-category
+	-price
+	-discount
+	-quantity in stock
+	-quantity in reserve
+	-image
+	-short description
+	-description
+	-date of arrival
+
+User:
+	-name
+	-full name
+	-email
+	-phone
+	-address
+	-day of birth
+	-password
+
+
+User(all) has methods:	
+	-Login:
+		url ='/auth/login';
+		takes parameters: 
+			username, papassword;
+		returns:
+			username, JWT, message(success login);
+		possible exceptions: 
+			access denied (permissions of user not implemented with action);
+			uncorrect login/password;
+				
+	
+	-Logout:
+		url = '/auth/logout';
+		takes parameters:
+			JWT;
+		returns:
+			message(You are logged out)
+		possible exceptions:
+			LogoutError(You are not logged!)
+
+User(Customer) has methods:
+
+	-register:
+		url = 'auth/register';
+		takes parameters:
+			username, papassword1, password2, email, phone;
+		returns:
+			user name, email, message(To complete the registration follow the link, we have just sent to your email);
+		possible exceptions: ValidationError(Passwords don't match),(password must not match the first name, last name or email),
+							(username is not unique),(email is not unique),
+							(phone is not unique), (some required fields were not filled);
+			 
+	-Forgot my password:
+		-url = 'auth/reset-pass'
+		takes parameters:
+			login = username or email or phone (values are unique);
+		returns:
+			message(We sent new password to your email, please change it in your profile! );
+		possible exceptions:
+			InvalidData(Invalid email/username);
+			
+	-edit profile:
+		url = '/auth/edit-profile';
+		takes parameters:
+			user, JWT;
+			parameters to change:
+				first_name, last_name, address, zip_code, birth_day;
+			
+		-change password:
+			url = '/auth/change-pass'
+			takes parameters:
+				password1, password2, JWT;
+			returns:
+				message(Changed successfully)
+			possible exceptions:
+				ValidationError(Passwords don't match), (password is to short, it must be at least 8 characters),
+					`	(password must not match the first name, last name or email);
+		-change email:
+			url = '/auth/change-email'
+			takes parameters:
+				new_email, JWT;
+			returns:
+				message(To complete email change follow the link, we have just sent to your email);
+				
+	-confirm email:
+		url = '/auth/confirm-email?key='
+		returns:
+			message(Your email was confirmed)
+
+		possible exception:
+			ConfirmationError(Key is not valid, may be it had expired)
+
+	-view categories:
+		url = '/catalog'
+		takes parameters:
+			JWT;
+		returns:
+			{'categories':[{'category_id', 'category_name', 'category_img_url', 'category_description'},...]};
+		popssible exceptions:
+			Error404(Page not found);
+ 
+	-View subcategories/products:
+		url = '/{category_name}'
+		takes parameters:
+			category_name, JWT;
+		returns:
+			{'categories':[{'id', 'name','img_url', 'description'},...]};
+			or
+
+			{'prosucts':[{'code', 'name','short_description', 'img_url','price'},...]};
+
+		possible exceptions:
+			ObjectDoesNotExists(Category with name {category_name} not exsists)
+					
+	-view product details:
+		url = '/{product_category_name}/{product_code}'
+		takes parameters:
+			product_code;
+		returns:
+			{'code', 'name','short_description', 'img_url', 'description', 'price', 'in_stock',
+				'discount', 'date_of_come'}
+
+		possible exceptions:
+			ObjectDoesNotExists(Product with code {product_code} not found.)
+	
+	-search product in category/categories/all:
+		url = '/search?'
+		takes parameters:
+			categories, search_string;
+		returns:
+			{'prosucts':[{'code', 'name','short_description', 'img_url', 'price'},...]};
+		possible exceptions:
+			ObjectDoesNotExists(Nothing found.)
+	
+
+	-add product to cart:
+		url = '/add_to_cart/{product_code}'
+		takes parameters:
+			product_code, JWT;
+		returns:
+			{'cart':{'prosucts':[{'item_id', 'code', 'name','short_description', 'img_url', 'price'},...}}
+
+		possible exceptions:
+			ObjectDoesNotExists(Product with code {product_code} does not exists.)
+
+	-view cart:
+		url = '/cart'
+		takes parameters:
+			product_code, JWT;
+		returns:
+			{'cart':{'prosucts':[{'item_id', 'code', 'name','short_description', 'img_url', 'price'},...}}
+
+		possible exceptions:
+			ObjectDoesNotExists(Product with code {product_code} does not exists.)
+
+	-change quantity of product in cart
+	-delete product from cart
+	-reserve product
+	-create order with cart
+	-create application to cancel the order
+	-create product feedback
+
+User(staff) has methods:
+	-login
+	-logout
+	-view category/products
+	-add categories/product
+	-edit category/product
+	-delete category/product

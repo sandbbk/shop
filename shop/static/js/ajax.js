@@ -8,8 +8,7 @@
                 dataType: 'json',
                 data: $('#aj_form').serialize(),
                 success: function(data) {
-                    document.getElementById('aj_ch').innerHTML = '';
-                    $("#aj_ch").append(data['response']);
+                    document.getElementById('aj_ch').innerHTML = JSON.stringify(data.response);
                 },
             });
         });

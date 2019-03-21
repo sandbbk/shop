@@ -4,13 +4,13 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime, timedelta
 from django.db.models import Sum, F, ExpressionWrapper
-from django.contrib.auth.hashers import (check_password, is_password_usable, make_password,)
+from django.contrib.auth.decorators import login_required
 
 
 class Category(models.Model):
     name = models.CharField(max_length=64, unique=True)
     parent = models.ForeignKey('self', null=True, max_length=64, verbose_name='Parent', blank=True,
-                               db_index=True, on_delete=models.deletion.CASCADE)
+                               db_index=True, on_delete=models.CASCADE)
     icon = models.ImageField(upload_to='', verbose_name=u'Photo', help_text='jpg/png - file')
     description = models.TextField(max_length=512, blank=True, null=True)
 
@@ -22,7 +22,7 @@ class Product(models.Model):
     code = models.AutoField(primary_key=True)
     name = models.CharField(max_length=64, db_index=True)
     category = models.ForeignKey(Category, max_length=64, verbose_name='Category', db_index=True,
-                                 on_delete=models.deletion.CASCADE)
+                                 on_delete=models.CASCADE)
     price = models.DecimalField(null=False, decimal_places=2, max_digits=7)
     discount = models.DecimalField(default=0, decimal_places=2, max_digits=7)
     qu_in_stock = models.PositiveIntegerField(default=0, db_index=True)
@@ -43,25 +43,30 @@ class User(AbstractUser):
     address = models.CharField(max_length=256, blank=True, null=True)
     zip_code = models.IntegerField(null=True, blank=True)
     birth_day = models.DateField(default=None, null=True)
-    purse = models.DecimalField(default=0, decimal_places=2, max_digits=10)
+    # purse = models.DecimalField(default=0, decimal_places=2, max_digits=10)
 
-    def set_password(self, raw_password):
-        self.password = make_password(raw_password)
+    # EMAIL_FIELD = 'email'
+    # USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ['email', 'phone']
+
+    class Meta(AbstractUser.Meta):
+        swappable = 'AUTH_USER_MODEL'
 
     def __str__(self):
         return self.username
 
     def get_cart(self):
-        return Cart_items.objects.filter(user=self).select_related('product')
+        cart = Cart_items.objects.filter(user=self).select_related('product')
+
+        total_cart_cost = Cart_items.objects.filter(user=self).aggregate(cart_total=ExpressionWrapper(
+                    Sum(F('product__price') * F('quantity')), output_field=models.DecimalField()))
+        total_cart_cost['cart_total'] = str(total_cart_cost['cart_total'])
+        print(type(total_cart_cost))
+        return cart, total_cart_cost
 
     def check_cart(self, product_code):  # returns tuple of quantity of checked product and it's item in cart or False if it DoesNotExist
-        try:
-            item = Cart_items.objects.get(product=product_code)
-        except ObjectDoesNotExist:
-            return 0, False
-        except TypeError as e:
-            return 0, repr(e)
-        return item.quantity, item
+        item = Cart_items.objects.get(product=product_code, user=self)
+        return item
 
     def del_old_reserves(self):
         res_timelim = datetime.now() - timedelta(hours=24)
@@ -72,34 +77,29 @@ class User(AbstractUser):
             product = Product.objects.get(code=product_code)
             reserved = Reserve.objects.get(product=product, user=self)
         except ObjectDoesNotExist:
-            return 0, product
+            return 0
         return reserved.quantity, reserved
 
     @transaction.atomic
     def add_to_cart(self, product_code, quantity):
-        product_code = int(product_code)
-        quantity = int(quantity)
-        cart = self.get_cart()  # queryset of objects in cart
+        cart, total = self.get_cart()  # queryset of objects in cart
         product = Product.objects.get(code=product_code)
+        cart_ret = list(cart.values('id', 'product__code', 'product__name', 'product__price', 'quantity', 'user__id'))
+        ret = {'cart': cart_ret}
+        ret.update(total)
         if cart:
-            if self.check_cart(product_code)[0]:
+            if self.check_cart(product_code):
                 cart_item = cart.get(product__code=product_code)
                 cart_item.quantity += quantity
                 cart_item.save()
-                return {'result': 'Success', 'reason': 'updated'}
+                return ret
         Cart_items.objects.create(user=self, product=product, quantity=quantity)
-        result = {'result': 'Success', 'reason': 'created'}
-        return result
+        return ret
 
     def del_from_cart(self, *ids):
-        try:
             cart = self.get_cart()
             deleted = cart.filter(id__in=ids).delete()
-        except ObjectDoesNotExist as e:
-            result = {'result': 'Error', 'reason': repr(e)}
-        else:
-            result = {'result': 'Success', 'reason': f'deleted: {deleted}'}
-            return result
+            return deleted
 
     def cart_to_order(self):  # save products from cart to order
         cart = self.get_cart()
@@ -127,13 +127,14 @@ class User(AbstractUser):
                                         f"in stock. You should to choose a smaller quantity!")
                 Order_items.objects.bulk_create(order_items)
                 cart_wt = Order_items.objects.filter(order=order).aggregate(cart_total=ExpressionWrapper(
-                    Sum(F('price') - F('price') * F('discount') / 100), output_field=models.DecimalField()))
+                    Sum(F('price') * F('quantity')), output_field=models.DecimalField()))
                 order.total_cost = cart_wt['cart_total']
                 order.save()
                 deleted = cart.delete()
                 result = {'result': 'success', 'reason': f'replaced {deleted[0]}'}
         return result
 
+    @login_required
     @transaction.atomic
     def reserve_product(self, product_code, quantity=1, client_resp=False):  # client_resp - check for client consent
         product = Product.objects.get(code=product_code)
@@ -158,8 +159,8 @@ class User(AbstractUser):
 
 
 class Cart_items(models.Model):
-    user = models.ForeignKey(User, on_delete=models.deletion.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.deletion.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.IntegerField()
 
 
@@ -171,7 +172,7 @@ class Cart_items(models.Model):
         verbose_name_plural = 'Cart items'
 
 class Order(models.Model):
-    user = models.ForeignKey(User, related_name='orders', on_delete=models.deletion.CASCADE)
+    user = models.ForeignKey(User, related_name='orders', on_delete=models.CASCADE)
     total_cost = models.DecimalField(default=0, decimal_places=2, max_digits=8)
     date = models.DateTimeField(auto_now_add=True)
     paid = models.BooleanField(default=False, choices=(('True', True), ('False', False)))
@@ -179,7 +180,7 @@ class Order(models.Model):
 
 
 class Order_items(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.deletion.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
     code = models.CharField(max_length=32)
     name = models.CharField(max_length=64)
     price = models.DecimalField(null=False, decimal_places=2, max_digits=7)

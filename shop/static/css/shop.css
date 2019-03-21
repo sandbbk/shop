@@ -1,0 +1,155 @@
+
+body { background-color: #eee;
+       position: relative;
+       margin: 0;
+
+      }
+
+a   { font-family: arial;
+      text-decoration: none;
+    }
+
+a:visited { color: #009;
+            }
+
+a:hover:before { opacity:1;
+                }
+a:hover { color: #44ee67;
+                -webkit-transition: opacity 1s linear;
+                -o-transition: opacity 1s linear;
+                -moz-transition: opacity 1s linear;
+                transition: opacity 1s linear;
+                 }
+
+.element {  margin-left: -20px;
+            display: block;
+            color: #384;
+            padding-bottom: 80px;
+            }
+
+#create {   position: relative;
+            left: 80%;
+             }
+
+.page-header {  height: 80px;
+                width: 100%;
+                background-color: #8888ff;
+                text-align: center;
+                display: inline-block;
+                position: relative;
+            }
+
+.login {    position: absolute;
+            right: 50px;
+            margin-top: 15px;
+
+            }
+
+.login a { margin-left: 6px;
+            }
+
+.page-header h1 {
+                    position: absolute;
+                    left: 100px;
+                }
+
+
+
+.icon {margin-left : 10px;
+        }
+
+.nav-bar { position: absolute;
+           top: 80px;
+           bottom: 50px;
+           width: 30%;
+           height: 100%;
+           border-right: 1px solid #fff;
+
+           padding: 10px 10px 50px 10px;
+        }
+
+.main { position: absolute;
+        top: 80px;
+        left: 30%;
+        width : 60%;
+        padding: 10px 10px 100px 30px;
+        max-height: 100%;
+        }
+#count { border-left: 3px solid #777;
+         padding-left: 5px;
+         font-family: sains-serif;
+         color: #777;
+        }
+
+.paginator {  position: fixed;
+              display: inline-block;
+              bottom: 60px;
+              left: 40%;
+                }
+ .paginator span  {  margin: 5;
+                     padding: 5px;
+
+                  }
+
+.paginator span.this {  margin: 5;
+                   background: #7fc2dc;
+                   padding: 5px;
+                   border-radius: 5px;
+                  }
+
+.paginator span a { color: #009977;
+                    text-align: center;
+                    }
+
+.paginator span.unactive {  pointer-events: none;
+                            }
+
+
+.form input, textarea {margin-left: 100px;
+                        display: block;
+                         }
+
+.form #id_icon{ display: inline-block;
+                margin-left: 50px;
+                }
+.helptext { font-family: arial;
+            color: #888;
+
+            }
+
+.save { border-width: 1px;
+        border-radius: 3px;
+        text-shadow: 0 1px 0 #fff;;
+        background-image: linear-gradient(to bottom,#fff 0,#a0a0a0 100%);
+        background-repeat: repeat-x;
+        border-color: #ccc;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 1px 1px rgba(0,0,0,.075);
+
+        }
+
+.save:hover {
+        border-radius: 3px;
+        text-shadow: 0 1px 0 #0ff;;
+        background-image: linear-gradient(to bottom,#fff 0,#a0a0a0 100%);
+        background-repeat: repeat-x;
+        border-color: #ccc;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.15), 0 1px 1px rgba(0,0,0,.075);
+            }
+
+.save:active {  background-image: linear-gradient(to top,#fff 0,#a0a0a0 100%);
+                border: solid 1px transparent;
+                }
+
+.footer { position: fixed;
+          height: 50px;
+          width: 100%;
+          bottom: 0;
+          background: #8888ff;
+          display: block;
+         }
+
+.footer div  { display: inline-block;
+                margin-left: 15px;
+               font-family: arial;
+               color: #ffeebb;
+                }

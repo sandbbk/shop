@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'shop',
+    'authentication',
 ]
 
 AUTH_USER_MODEL = 'shop.User'
@@ -102,10 +103,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-PASSWORD_HASHERS = [
-    'django.contrib.auth.hashers.PBKDF2PasswordHasher',
-    'accounts.hashers.PBKDF2WrappedSHA1PasswordHasher',
-]
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/

@@ -1,16 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-    {% load static %}
-    {% for category in categories %}
-        <p><img src="{{category.photo.url}}"><a href="{% url 'category' %}?id={{category.id}}" >{{ category.name }}</a></p>
-    {% endfor %}
-    {% for product in products %}
-        <p><a href="{% url 'category' %}?code={{product.code}}" >{{ product.name }}</a></p>
-    {% endfor %}
-</body>
-</html>
+{% extends 'authentication/base.html' %}
+
+{% block navbar %}
+
+ <form id="aj_form" action="" >{% csrf_token %}
+     <p><label for="customer">customer id</label><input type="text" name="customer_id" id="customer"></p>
+     <p><label for="product">product code</label><input type="text" name="product_code" id="product"></p>
+     <p><label for="category">category id</label><input type="text" name="category_id" id="category"></p>
+     <p><label for="quantity">quantity</label><input type="text" name="quantity" id="quantity"></p>
+     <p><label for="cart_item_id">cart_item_id</label><input type="text" name="cart_item_id" id="cart_item_id"></p>
+     <label for="url">action</label>
+     <select  name="url" id="url" >
+                 <option value="category/">categories</option>
+                 <option value="products/">products</option>
+                 <option value="products/add">add to cart</option>
+                 <option value="products/add_to_reserve">add to reserve</option>
+                 <option value="product_detail">product detail</option>
+                 <option value="cart">get cart</option>
+                 <option value="cart_to_order">make order</option>
+     </select>
+     <p>Search filters:</p>
+     <p><label for="code">code</label><input type="text" name="code__icontains" id="code"></p>
+     <p><label for="name">name</label><input type="text" name="name__icontains" id="name"></p>
+     <select  name="price_option" >
+                 <option value="price__icontains">price_like</option>
+                 <option value="price__gte">price is greater than or eq</option>
+                 <option value="price__lte">price is lower than or eq</option>
+     </select>
+     <p><label for="price">price</label><input type="text" name="price" id="price"></p>
+     <p><label for="descr">description</label><input type="text" name="description__icontains" id="descr"></p>
+     <p><label for="short">short description</label><input type="text" name="short_description__icontains" id="short"></p>
+     <button type="button">Apply</button>
+ </form>
+
+{% endblock %}
+

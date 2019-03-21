@@ -10,8 +10,8 @@ class ProductAdmin(admin.ModelAdmin):
     list_display = [field.name for field in Product._meta.fields if field.name != "id"]
 
 
-class UserAdmin(admin.ModelAdmin):
-    list_display = [field.name for field in User._meta.fields]
+# class UserAdmin(admin.ModelAdmin):
+#     list_display = [field.name for field in User._meta.fields]
 
 
 class OrderAdmin(admin.ModelAdmin):
@@ -28,7 +28,7 @@ class ReserveAdmin(admin.ModelAdmin):
 
 admin.site.register(Category, CategoryAdmin)
 admin.site.register(Product, ProductAdmin)
-admin.site.register(User, UserAdmin)
+# admin.site.register(User, UserAdmin)
 admin.site.register(Order, OrderAdmin)
 admin.site.register(Cart_items, Cart_itemsAdmin)
 admin.site.register(Reserve, ReserveAdmin)
