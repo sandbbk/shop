@@ -61,7 +61,6 @@ class User(AbstractUser):
         total_cart_cost = Cart_items.objects.filter(user=self).aggregate(cart_total=ExpressionWrapper(
                     Sum(F('product__price') * F('quantity')), output_field=models.DecimalField()))
         total_cart_cost['cart_total'] = str(total_cart_cost['cart_total'])
-        print(type(total_cart_cost))
         return cart, total_cart_cost
 
     def check_cart(self, product_code):  # returns tuple of quantity of checked product and it's item in cart or False if it DoesNotExist
