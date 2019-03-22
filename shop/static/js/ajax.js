@@ -1,6 +1,6 @@
 
     $(document).ready(function () {
-        $("#aj_form").click(function() {
+        $("#btn").click(function() {
             $.ajax({
                 url: document.getElementById('url').value,
                 type: 'POST',
@@ -10,6 +10,10 @@
                 success: function(data) {
                     document.getElementById('aj_ch').innerHTML = JSON.stringify(data.response);
                 },
+                    error: function (xhr, ajaxOptions, thrownError) {
+                        document.getElementById('aj_ch').innerHTML = xhr.status + thrownError
+
+                }
             });
         });
     });

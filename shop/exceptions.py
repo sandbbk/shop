@@ -14,5 +14,10 @@ class QuantityKeyError(KeyError):
 class CartItemIdKeyError(KeyError):
     pass
 
+
 class FilterKeyError(KeyError):
+    pass
+
+
+class UserAuthError(TypeError):
     pass

@@ -2,6 +2,7 @@ from django.shortcuts import render
 from .models import Product, Category, User, Order, Cart_items
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
+from shop.exceptions import (QuantityKeyError, UserAuthError)
 
 
 # def get_customer(request):
@@ -36,12 +37,15 @@ def index(request):
 
 
 def get_cart(request):
-    user = request.user
-    if isinstance(user, User):
-        result = list(user.get_cart().values('id', 'product__code', 'product__name', 'product__price', 'user__id'))
-    else:
-        result = user
-    return JsonResponse(result, safe=False)
+    try:
+        user = request.user
+        if isinstance(user, User):
+            cart, result = user.get_cart()
+        else:
+            raise UserAuthError
+    except UserAuthError as e:
+        result = {'response': {'error': repr(e)}}
+    return JsonResponse({'response': result})
 
 
 def add_to_cart(request):
@@ -51,12 +55,13 @@ def add_to_cart(request):
             data = request.POST
             product_code = int(data.get('product_code'))
             quantity = int(data.get('quantity'))
-
+            if not quantity:
+                raise QuantityKeyError
             result = user.add_to_cart(product_code, quantity)
         else:
-            raise TypeError('User is not authenticated')
-    except (ObjectDoesNotExist, TypeError) as e:
-        result = {'Error': repr(e)}
+            raise UserAuthError
+    except (ObjectDoesNotExist, UserAuthError, QuantityKeyError) as e:
+        result = {'error': repr(e)}
     return JsonResponse({'response': result})
 
 

@@ -5,6 +5,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from datetime import datetime, timedelta
 from django.db.models import Sum, F, ExpressionWrapper
 from django.contrib.auth.decorators import login_required
+from shop.exceptions import QuantityKeyError
 
 
 class Category(models.Model):
@@ -61,10 +62,17 @@ class User(AbstractUser):
         total_cart_cost = Cart_items.objects.filter(user=self).aggregate(cart_total=ExpressionWrapper(
                     Sum(F('product__price') * F('quantity')), output_field=models.DecimalField()))
         total_cart_cost['cart_total'] = str(total_cart_cost['cart_total'])
-        return cart, total_cart_cost
+        cart_ret = list(
+            cart.values('id', 'product__code', 'product__name', 'product__price', 'quantity', 'user__id'))
+        json_cart = {'cart': cart_ret}
+        json_cart.update(total_cart_cost)
+        return cart, json_cart
 
     def check_cart(self, product_code):  # returns tuple of quantity of checked product and it's item in cart or False if it DoesNotExist
-        item = Cart_items.objects.get(product=product_code, user=self)
+        try:
+            item = Cart_items.objects.get(product=product_code, user=self)
+        except ObjectDoesNotExist:
+            return False
         return item
 
     def del_old_reserves(self):
@@ -81,19 +89,23 @@ class User(AbstractUser):
 
     @transaction.atomic
     def add_to_cart(self, product_code, quantity):
-        cart, total = self.get_cart()  # queryset of objects in cart
+        cart, jc = self.get_cart()  # queryset of objects in cart
         product = Product.objects.get(code=product_code)
-        cart_ret = list(cart.values('id', 'product__code', 'product__name', 'product__price', 'quantity', 'user__id'))
-        ret = {'cart': cart_ret}
-        ret.update(total)
         if cart:
             if self.check_cart(product_code):
                 cart_item = cart.get(product__code=product_code)
-                cart_item.quantity += quantity
-                cart_item.save()
-                return ret
+                if cart_item.quantity + quantity > 0:
+                    cart_item.quantity += quantity
+                    cart_item.save()
+                else:
+                    cart_item.delete()
+                cart, jc = self.get_cart()
+                return jc
+        if quantity < 0:
+            raise QuantityKeyError
         Cart_items.objects.create(user=self, product=product, quantity=quantity)
-        return ret
+        cart, jc = self.get_cart()
+        return jc
 
     def del_from_cart(self, *ids):
             cart = self.get_cart()
@@ -160,7 +172,7 @@ class User(AbstractUser):
 class Cart_items(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.IntegerField()
+    quantity = models.PositiveIntegerField()
 
 
     def __str__(self):
