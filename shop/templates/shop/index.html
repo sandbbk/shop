@@ -3,20 +3,24 @@
 {% block navbar %}
 
  <form id="aj_form" action="" >{% csrf_token %}
-     <p><label for="customer">customer id</label><input type="text" name="customer_id" id="customer"></p>
-     <p><label for="product">product code</label><input type="text" name="product_code" id="product"></p>
+     <p><label for="username">username</label><input type="text" name="username" id="username"></p>
+     <p><label for="password">password</label><input type="password" name="password" id="password"></p>
+     <p><label for="product_code">product code</label><input type="text" name="product_code" id="product_code"></p>
      <p><label for="category">category id</label><input type="text" name="category_id" id="category"></p>
      <p><label for="quantity">quantity</label><input type="text" name="quantity" id="quantity"></p>
-     <p><label for="cart_item_id">cart_item_id</label><input type="text" name="cart_item_id" id="cart_item_id"></p>
+     <p><label for="cart_item_id">cart_item_id</label><input type="text" name="id" id="cart_item_id"></p>
+     <p><label for="page">page</label><input type="text" name="page" id="page"></p>
      <label for="url">action</label>
      <select  name="url" id="url" >
-                 <option value="category/">categories</option>
-                 <option value="products/">products</option>
-                 <option value="products/add">add to cart</option>
-                 <option value="products/add_to_reserve">add to reserve</option>
-                 <option value="product_detail">product detail</option>
-                 <option value="cart">get cart</option>
-                 <option value="cart_to_order">make order</option>
+         <option value="catalog">catalog</option>
+         <option value="products/add">add to cart</option>
+         <option value="products/add_to_reserve">add to reserve</option>
+         <option value="product_detail">product detail</option>
+         <option value="cart">get cart</option>
+         <option value="del_from_cart">del from cart</option>
+         <option value="make_order">make order</option>
+         <option value="login">login</option>
+         <option value="logout">logout</option>
      </select>
      <p>Search filters:</p>
      <p><label for="code">code</label><input type="text" name="code__icontains" id="code"></p>

@@ -19,7 +19,8 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='home'),
-    path('categories/', views.index, name='category'),
+    path('catalog', views.catalog, name='catalog'),
+    path('product_detail', views.product_detail, name='product_detail'),
     path('products/add', views.add_to_cart, name='add'),
     path('cart', views.get_cart),
     path('del_from_cart', views.del_from_cart),
