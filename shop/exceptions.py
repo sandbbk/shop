@@ -1,3 +1,10 @@
+class DecimalValueError(ValueError):
+    pass
+
+
+class EmptyValue(ValueError):
+    pass
+
 
 class IdKeyError(KeyError):
     pass
@@ -15,7 +22,7 @@ class CartItemIdKeyError(KeyError):
     pass
 
 
-class FilterKeyError(KeyError):
+class SearchKeyError(KeyError):
     pass
 
 

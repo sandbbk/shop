@@ -19,7 +19,7 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='home'),
-    path('catalog', views.catalog, name='catalog'),
+    path('actions', views.actions, name='actions'),
     path('product_detail', views.product_detail, name='product_detail'),
     path('products/add', views.add_to_cart, name='add'),
     path('cart', views.get_cart),
