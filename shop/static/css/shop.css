@@ -1,8 +1,13 @@
 
-body { background-color: #eee;
-       position: relative;
-       margin: 0;
+body {
 
+        position: relative;
+        margin: 0;
+        background-image: linear-gradient(to top, rgba(0, 0, 0, .30), rgba(0, 0, 0, .70)), url(http://localhost/media/51271415.jpg);
+        background-repeat: no-repeat;
+        background-position: center center;
+        background-attachment: fixed;
+        background-size: cover;
       }
 
 a   { font-family: arial;

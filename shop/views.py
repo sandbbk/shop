@@ -2,25 +2,21 @@ from django.shortcuts import render
 from .models import Product, Category, User, Order, Cart_items
 from django.http import JsonResponse
 from django.core.exceptions import ObjectDoesNotExist
-from shop.exceptions import (QuantityKeyError, UserAuthError, EmptyValue, SearchKeyError, DecimalValueError)
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from shop.exceptions import (CodeKeyError, QuantityKeyError, UserAuthError, EmptyValue, SearchKeyError, DecimalValueError)
+from django.core.paginator import (Paginator, EmptyPage, PageNotAnInteger)
 from django.db.models import Q
+from .extentions import send_email
 
 
-def p_range(pages, num_page):   # function which creates list of page-links;
-    p_set = set()
+def p_range(pages, num_page):   # function which creates list of page-numbers;
+    p_set = {1, pages.num_pages}
     if not num_page:
         num_page = 1
-    for n in pages.page_range:
-        if n == int(num_page):
-            for d in range(n - 5, n + 6):
-                if 1 <= d <= pages.num_pages:
-                    p_set.add(d)
-    s = (k for k in range(1, pages.num_pages + 1) if k % 50 == 0 or k == 1 or k == pages.num_pages)
-    for k in s:
-        p_set.add(k)
-    p_list = sorted(list(p_set))
-    return p_list
+    base_set = set(pages.page_range)
+    p_set.update(range(num_page - 5, num_page + 6))
+    p_set.update(range(0, pages.num_pages, 50))
+    p_set.intersection_update(base_set)
+    return sorted(list(p_set))
 
 
 def paginate(request, obj, fields=None):
@@ -50,24 +46,22 @@ def catalog(request):
     result = {'response': {}}
     try:
         category_id = request.POST.get('category_id')
-        if category_id:
-            category = Category.objects.get(id=category_id)
-            if category.category_set.all():
-                obj = category.category_set.all()
-                content, p_list = paginate(request, obj)
-                result['response'].update({'categories': content, 'p_list': p_list})
-            elif category.product_set.all():
-                obj = category.product_set.all()
-                content, p_list = paginate(request, obj, ('code', 'name', 'price',
-                                                          'category', 'photo', 'short_description'))
-                result['response'].update({'products': content, 'p_list': p_list})
-    except (ObjectDoesNotExist, ValueError) as e:
+        category = Category.objects.get(id=category_id)
+        if category.category_set.all():
+            obj = category.category_set.all()
+            content, p_list = paginate(request, obj)
+            result['response'].update({'categories': content, 'p_list': p_list})
+        elif category.product_set.all():
+            obj = category.product_set.all()
+            content, p_list = paginate(request, obj, ('code', 'name', 'price', 'category', 'photo', 'short_description'))
+            result['response'].update({'products': content, 'p_list': p_list})
+    except ObjectDoesNotExist:
+        obj = Category.objects.all()
+        content, p_list = paginate(request, obj)
+        result['response'].update({'categories': content, 'p_list': p_list})
+    except  ValueError as e:
         result['response'].update({'error': repr(e)})
-    obj = Category.objects.all()
-    content, p_list = paginate(request, obj)
-    result['response'].update({'categories': content, 'p_list': p_list})
     return JsonResponse(result)
-
 
 
 def product_detail(request):
@@ -83,7 +77,6 @@ def product_detail(request):
     except (ObjectDoesNotExist, ValueError) as e:
         result['response'].update({'error': repr(e)})
     return JsonResponse(result)
-
 
 
 def get_cart(request):
@@ -116,19 +109,18 @@ def add_to_cart(request):
 
 
 def dcmls_to_list(val):
-    if val:
-        val_list = []
-        if val.isdecimal():
-            val_list.append(val)
-        else:
-            val = val.split(',')
-            for cid in val:
-                if cid.strip().isdecimal():
-                    val_list.append(cid.strip())
-                else:
-                    raise DecimalValueError
+    if not val:
+        raise EmptyValue
+    val_list = []
+    if val.isdecimal():
+        val_list.append(val)
         return val_list
-    return []
+    val = val.split(',')
+    for cid in val:
+        if not cid.strip().isdecimal():
+            raise DecimalValueError
+        val_list.append(cid.strip())
+    return val_list
 
 
 def del_from_cart(request):
@@ -150,31 +142,32 @@ def cart_to_order(request):
     try:
         result['response'].update(user.cart_to_order())
     except Exception as e:
-            result = {'result': 'Error', 'reason': repr(e)}
+            result = {'result': 'error', 'reason': repr(e)}
     return JsonResponse(result)
 
 
 def to_reserve(request):
     user = request.POST.get('user')
-    if isinstance(user, User):
-        try:
-            data = request.POST
-            product_code = data.get('product_code')
-            quantity = data.get('quantity')
-            if not quantity:
-                quantity = 1
-            result = user.reserve_product(product_code, quantity)
-        except Exception as e:
-            result = {'result': 'Error', 'reason': repr(e)}
-    else:
-        result = user
+    try:
+        if not isinstance(user, User):
+            raise UserAuthError
+        data = request.POST
+        product_code = data.get('product_code')
+        if not product_code:
+            raise CodeKeyError
+        quantity = data.get('quantity')
+        if not quantity:
+            quantity = 1
+        result = user.reserve_product(product_code, quantity)
+    except (UserAuthError, CodeKeyError) as e:
+        result = {'result': 'error', 'reason': repr(e)}
     return JsonResponse(result)
 
 
 def search(request):
     try:
         categories = dcmls_to_list(request.POST.get('category_id'))
-        text_list = (request.POST.get('search_text')).split()
+        text_list = (request.POST.get('search_text', '')).split()
         if categories:
             products = Product.objects.filter(category__id__in=categories)
         else:

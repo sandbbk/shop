@@ -3,6 +3,9 @@ from django.contrib.auth.forms import AuthenticationForm
 from .forms import UserCreationForm
 from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
+from shop.extentions import send_email
+from datetime import datetime, timedelta
+from .models import Key
 
 
 def auth_login(request):
@@ -38,6 +41,7 @@ def log_out(request):
         return JsonResponse({'response': 'you are logged out'})
     return redirect(request.GET.get('next'))
 
+
 def register(request):
     if request.method == "GET":
         form = UserCreationForm()
@@ -45,9 +49,20 @@ def register(request):
     else:
         form = UserCreationForm(request.POST)
         if form.is_valid():
-            form.save()
+            user = form.save(commit=False)
+            user.is_active = False
+            user.save()
+            key = f'{user.name} + {str(datetime.now())}'
+            key = Key.objects.create(user=user, data=key, expire_time=(datetime.now() + timedelta(hours=12)))
+            subject = 'Activation of account on GoShop'
+            send_email(user.email, subject, 'authentication/activate.html', )
+
         next = request.GET.get('next')
         if next in ('/register', '/login') or next is None:
             return redirect('/')
         elif next:
             return redirect(next)
+
+
+def activate(request):
+    pass
