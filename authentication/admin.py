@@ -15,7 +15,7 @@ class UserAdmin(BaseUserAdmin):
     fieldsets = (
         ('General', {'fields': ('email', 'password', 'phone')}),
         ('Personal info', {'fields': ('username', 'address', 'zip_code', 'birth_day')}),
-        ('Permissions', {'fields': ('is_staff', 'is_superuser', 'is_active')}),
+        ('Permissions', {'fields': ('is_staff', 'is_superuser', 'is_active', 'user_permissions', 'groups')}),
     )
 
     add_fieldsets = (

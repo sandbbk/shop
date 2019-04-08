@@ -3,7 +3,7 @@ body {
 
         position: relative;
         margin: 0;
-        background-image: linear-gradient(to top, rgba(0, 0, 0, .30), rgba(0, 0, 0, .70)), url(http://localhost/media/51271415.jpg);
+        background-image: linear-gradient(to top, rgba(184, 89, 255, .9), rgba(0, 0, 0, .0)), url(/media/2573.jpg);
         background-repeat: no-repeat;
         background-position: center center;
         background-attachment: fixed;
@@ -63,16 +63,19 @@ a:hover { color: #44ee67;
 .icon {margin-left : 10px;
         }
 
-.nav-bar { position: absolute;
-           top: 80px;
+.nav-bar { position: relative;
+           top: 50px;
            bottom: 50px;
-           width: 30%;
-           height: 100%;
-           border-right: 1px solid #fff;
-
+           width: 250px;
+           max-height: 100%;
+           border-right: 1px solid #aaa;
            padding: 10px 10px 50px 10px;
         }
-
+.nav-bar input, select, button
+{
+            border-radius: 7px;
+            margin-left: 60px;
+}
 .main { position: absolute;
         top: 80px;
         left: 30%;

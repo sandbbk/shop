@@ -28,3 +28,7 @@ class SearchKeyError(KeyError):
 
 class UserAuthError(TypeError):
     pass
+
+
+class RequestMethodError(TypeError):
+    pass

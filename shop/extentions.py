@@ -6,8 +6,8 @@ from megashop.stf import (JWT_ALGORITHM, JWT_EXP_DELTA_SECONDS, JWT_SECRET)
 from datetime import datetime, timedelta
 
 
-def send_email(to_email, subject, template, context):
-    from_email = 'support@GoShop.edu'
+def send_mail(to_email, subject, template, context):
+    from_email = 'djangoandrest@gmail.com'
     html_content = render_to_string(template, {'context': context})
     text_content = strip_tags(html_content)
     msg = EmailMultiAlternatives(subject, text_content, from_email, [to_email])

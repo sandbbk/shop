@@ -5,12 +5,13 @@ from django.core.exceptions import ObjectDoesNotExist
 from shop.exceptions import (CodeKeyError, QuantityKeyError, UserAuthError, EmptyValue, SearchKeyError, DecimalValueError)
 from django.core.paginator import (Paginator, EmptyPage, PageNotAnInteger)
 from django.db.models import Q
-from .extentions import send_email
 
 
-def p_range(pages, num_page):   # function which creates list of page-numbers;
+def p_range(pages, num_page):   # function which creates convenient list of page-numbers;
     p_set = {1, pages.num_pages}
-    if not num_page:
+    try:
+        num_page = int(num_page)
+    except (ValueError, TypeError):
         num_page = 1
     base_set = set(pages.page_range)
     p_set.update(range(num_page - 5, num_page + 6))
@@ -45,7 +46,7 @@ def index(request):
 def catalog(request):
     result = {'response': {}}
     try:
-        category_id = request.POST.get('category_id')
+        category_id = request.POST.get('category_id', '')
         category = Category.objects.get(id=category_id)
         if category.category_set.all():
             obj = category.category_set.all()
@@ -55,11 +56,11 @@ def catalog(request):
             obj = category.product_set.all()
             content, p_list = paginate(request, obj, ('code', 'name', 'price', 'category', 'photo', 'short_description'))
             result['response'].update({'products': content, 'p_list': p_list})
-    except ObjectDoesNotExist:
+    except ValueError:
         obj = Category.objects.all()
         content, p_list = paginate(request, obj)
         result['response'].update({'categories': content, 'p_list': p_list})
-    except  ValueError as e:
+    except ObjectDoesNotExist as e:
         result['response'].update({'error': repr(e)})
     return JsonResponse(result)
 
@@ -109,9 +110,9 @@ def add_to_cart(request):
 
 
 def dcmls_to_list(val):
-    if not val:
-        raise EmptyValue
     val_list = []
+    if not val:
+        return val_list
     if val.isdecimal():
         val_list.append(val)
         return val_list

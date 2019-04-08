@@ -3,9 +3,15 @@ from django.contrib.auth.forms import AuthenticationForm
 from .forms import UserCreationForm
 from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
-from shop.extentions import send_email
+from shop.extentions import send_mail
 from datetime import datetime, timedelta
+import pytz
 from .models import Key
+from django.db import transaction
+from shop.exceptions import (RequestMethodError, UserAuthError)
+import hashlib
+from django.utils import timezone
+
 
 
 def auth_login(request):
@@ -42,6 +48,7 @@ def log_out(request):
     return redirect(request.GET.get('next'))
 
 
+@transaction.atomic
 def register(request):
     if request.method == "GET":
         form = UserCreationForm()
@@ -52,17 +59,32 @@ def register(request):
             user = form.save(commit=False)
             user.is_active = False
             user.save()
-            key = f'{user.name} + {str(datetime.now())}'
-            key = Key.objects.create(user=user, data=key, expire_time=(datetime.now() + timedelta(hours=12)))
+            key = (hashlib.sha256(user.email.encode('utf-8'))).hexdigest()
+            key = Key.objects.create(user=user, data=key, expire_time=(timezone.now() + timedelta(minutes=1)))
             subject = 'Activation of account on GoShop'
-            send_email(user.email, subject, 'authentication/activate.html', )
-
-        next = request.GET.get('next')
-        if next in ('/register', '/login') or next is None:
+            send_mail(user.email, subject, 'authentication/activate.html', key.data)
+        ne_xt = request.GET.get('next')
+        if ne_xt in ('/register', '/login') or ne_xt is None:
             return redirect('/')
-        elif next:
-            return redirect(next)
+        elif ne_xt:
+            return redirect(ne_xt)
+        else:
+            return
 
 
-def activate(request):
-    pass
+def activate(request, link):
+    try:
+        if request.method != 'GET':
+            raise RequestMethodError('Invalid request method')
+        key = Key.objects.get(data=link)
+        if key.expire_time <= timezone.now():
+            key.user.delete()
+            raise UserAuthError('Time for activation expired!')
+        key.user.is_active = True
+        key.user.save()
+        key.delete()
+        response = {'response': {'msg': f'{key.user.username} profile activated'}}
+    except UserAuthError as e:
+        return JsonResponse({'response': {'error': repr(e)}})
+    return redirect('/login')
+

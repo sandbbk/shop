@@ -63,7 +63,7 @@ User(Customer) has methods:
 							(username is not unique),(email is not unique),
 							(phone is not unique), (some required fields were not filled);
 			 
-	-Forgot my password:
+	-restore password:
 		-url = 'auth/reset-pass'
 		takes parameters:
 			login = username or email or phone (values are unique);
@@ -96,7 +96,7 @@ User(Customer) has methods:
 				message(To complete email change follow the link, we have just sent to your email);
 				
 	-confirm email:
-		url = '/auth/confirm-email?key='
+		url = '/auth/activate?key='
 		returns:
 			message(Your email was confirmed)
 
