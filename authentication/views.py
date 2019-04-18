@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
 from shop.extentions import send_mail
 from datetime import datetime, timedelta
-import pytz
+import json
 from .models import Key
 from django.db import transaction
 from shop.exceptions import (RequestMethodError, UserAuthError)
@@ -15,8 +15,9 @@ from django.utils import timezone
 
 
 def auth_login(request):
-    username = request.POST.get('username')
-    password = request.POST.get('password')
+    data = json.loads(request.body)
+    username = data['username']
+    password = data['password']
     user = authenticate(username=username, password=password)
     if user is not None and user.is_active:
         login(request, user)
@@ -24,7 +25,7 @@ def auth_login(request):
 
 
 def log_in(request):
-    if request.method == 'POST' and request.is_ajax():
+    if request.method == 'POST':  # and request.is_ajax():
         user = auth_login(request)
         if not user:
             user.username = None
@@ -43,7 +44,7 @@ def log_in(request):
 
 def log_out(request):
     logout(request)
-    if request.method == 'POST' and request.is_ajax():
+    if request.method == 'POST': # and request.is_ajax():
         return JsonResponse({'response': 'you are logged out'})
     return redirect(request.GET.get('next'))
 

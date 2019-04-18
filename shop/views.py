@@ -5,6 +5,10 @@ from django.core.exceptions import ObjectDoesNotExist
 from shop.exceptions import (CodeKeyError, QuantityKeyError, UserAuthError, EmptyValue, SearchKeyError, DecimalValueError)
 from django.core.paginator import (Paginator, EmptyPage, PageNotAnInteger)
 from django.db.models import Q
+from authentication.views import (log_in, log_out)
+from django.conf import settings
+import json
+from django.forms.models import model_to_dict
 
 
 def p_range(pages, num_page):   # function which creates convenient list of page-numbers;
@@ -23,7 +27,7 @@ def p_range(pages, num_page):   # function which creates convenient list of page
 def paginate(request, obj, fields=None):
     pages = Paginator(obj, 30)
     try:
-        num_page = request.POST.get('page')
+        num_page = json.loads(request.body).get('page')
         p_list = p_range(pages, num_page)
         page_content = pages.page(num_page)
     except PageNotAnInteger:
@@ -46,7 +50,7 @@ def index(request):
 def catalog(request):
     result = {'response': {}}
     try:
-        category_id = request.POST.get('category_id', '')
+        category_id = json.loads(request.body)['category_id']
         category = Category.objects.get(id=category_id)
         if category.category_set.all():
             obj = category.category_set.all()
@@ -56,7 +60,7 @@ def catalog(request):
             obj = category.product_set.all()
             content, p_list = paginate(request, obj, ('code', 'name', 'price', 'category', 'photo', 'short_description'))
             result['response'].update({'products': content, 'p_list': p_list})
-    except ValueError:
+    except (ValueError, KeyError):
         obj = Category.objects.all()
         content, p_list = paginate(request, obj)
         result['response'].update({'categories': content, 'p_list': p_list})
@@ -127,13 +131,13 @@ def dcmls_to_list(val):
 def del_from_cart(request):
     try:
         user = request.user
-        cart_ids = request.POST.get('id')
+        cart_ids = json.loads(request.body).get('id')
         if isinstance(user, User):
             result = user.del_from_cart(dcmls_to_list(cart_ids))
         else:
             raise UserAuthError
     except (ObjectDoesNotExist, TypeError, UserAuthError, EmptyValue, DecimalValueError) as e:
-        result = {'result': 'error', 'reason': repr(e)}
+        result = {'error': repr(e)}
     return JsonResponse({'response': result})
 
 
@@ -143,16 +147,17 @@ def cart_to_order(request):
     try:
         result['response'].update(user.cart_to_order())
     except Exception as e:
-            result = {'result': 'error', 'reason': repr(e)}
+        result.update({'error': repr(e)})
     return JsonResponse(result)
 
 
 def to_reserve(request):
-    user = request.POST.get('user')
+    user = request.user
+    result = {'response': {}}
     try:
         if not isinstance(user, User):
             raise UserAuthError
-        data = request.POST
+        data = json.loads(request.body)
         product_code = data.get('product_code')
         if not product_code:
             raise CodeKeyError
@@ -161,14 +166,15 @@ def to_reserve(request):
             quantity = 1
         result = user.reserve_product(product_code, quantity)
     except (UserAuthError, CodeKeyError) as e:
-        result = {'result': 'error', 'reason': repr(e)}
+        result.update({'error': repr(e)})
     return JsonResponse(result)
 
 
 def search(request):
     try:
-        categories = dcmls_to_list(request.POST.get('category_id'))
-        text_list = (request.POST.get('search_text', '')).split()
+        data = json.loads(request.body)
+        categories = dcmls_to_list(data.get('category_id'))
+        text_list = (data.get('search_text', '')).split()
         if categories:
             products = Product.objects.filter(category__id__in=categories)
         else:
@@ -188,14 +194,39 @@ def search(request):
     return JsonResponse({'response': {'products': content, 'p_list': p_list}})
 
 
+def get_uploaded_file(file, path):
+    with open(path, 'wb+') as dest:
+        for chunk in file:
+            dest.write(chunk)
+
+
+def create_object(request):
+    result = {'response': {}}
+    user = request.user
+    obj_type = request.POST['obj_type']
+    permission = 'shop.create_' + obj_type
+    if user.has_perm(permission):
+        obj = user.create_obj(request)
+        if isinstance(obj, (Category, Product)):
+            result['response'].update({obj_type: model_to_dict(obj, exclude=['qu_in_stock', 'reserved', 'allow_res_per_user', 'photo'])})
+    else:
+        result['response'].update({'error': 'Invalid data for creating object' + obj_type,
+                                   'data': (request.POST, type(request.FILES['photo']))})
+    return JsonResponse(result)
+
 def actions(request):
-    if request.method == 'POST' and request.is_ajax():
+    actions_dict = {'index': index, 'catalog': catalog, 'product_detail': product_detail, 'get_cart': get_cart,
+                    'add_to_cart': add_to_cart, 'del_from_cart': del_from_cart, 'cart_to_order': cart_to_order,
+                    'to_reserve': to_reserve, 'search': search, 'login': log_in, 'logout': log_out, 'create':
+                        create_object}
+    if request.method == 'POST' and request.POST.get('action'):
+        action = request.POST.get('action')
+        return actions_dict[action](request)
+    if request.method == 'POST':  # and request.is_ajax():
         try:
-            actions_dict = {'index': index, 'catalog': catalog, 'product_detail': product_detail, 'get_cart': get_cart,
-                            'add_to_cart': add_to_cart, 'del_from_cart': del_from_cart, 'cart_to_order': cart_to_order,
-                            'to_reserve': to_reserve, 'search': search}
-            action = request.POST.get('action')
+            data = json.loads(request.body)
+            action = data['action']
             func = actions_dict[action](request)
-        except KeyError:
+        except (KeyError, ValueError):
             return JsonResponse({'response': {'error': 'Value of action key is invalid!'}})
         return func

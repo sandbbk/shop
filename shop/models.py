@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from shop.exceptions import (QuantityKeyError, CartItemIdKeyError)
 
 
+
 class Category(models.Model):
     name = models.CharField(max_length=64, unique=True)
     parent = models.ForeignKey('self', null=True, max_length=64, verbose_name='Parent', blank=True,
@@ -34,7 +35,7 @@ class Product(models.Model):
     photo = models.ImageField(upload_to='', verbose_name=u'Photo', help_text='jpg/png - file', blank=True, null=True)
     short_description = models.CharField(max_length=256)
     description = models.TextField(null=True, blank=True)
-    date_of_come = models.DateTimeField()
+    date_of_come = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.name
@@ -177,6 +178,19 @@ class User(AbstractUser):
         else:
             result = {'result': 'Error', 'reason': f"You can't reserve {product}."}
         return result
+
+    def create_obj(self, request):
+        if request.POST['obj_type'] == 'category':
+            return Category.objects.create(name=request.POST['name'], description=request.POST['description'],
+                                           photo=request.FILES['photo'])
+        elif request.POST['obj_type'] == 'product':
+            category = Category.objects.get(name=request.POST['category'])
+            return Product.objects.create(name=request.POST['name'], category=category,
+                                          price=request.POST['price'], discount=request.POST.get('discount', 0),
+                                          description=request.POST['description'], photo=request.FILES['photo'],
+                                          short_description=request.POST['short_description'])
+        else:
+            raise KeyError('Key "obj_type"  had been set incorrectly!')
 
 
 class Cart_items(models.Model):
